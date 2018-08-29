@@ -1,0 +1,65 @@
+参考文章： https://yq.aliyun.com/articles/531067
+http://tech.lede.com/2017/07/03/rd/server/redisconfig/ 
+https://blog.csdn.net/liuxiao723846/article/details/78089577  【redis中的死key问题】
+
+
+#### 一、键值设计
+#### 1. key名设计
+(1) 可读性
+- 以业务名(或数据库名)为前缀(防止key冲突)，用冒号分隔，比如：业务名:子业务名:id ，类似：ACTIVITY:INVITE_REDPACKET:001
+-- 便于研发使用，也便于DBA 巡检发现异常隐患时及时通知业务方处理
+
+(2)简洁性
+- 保证语义的前提下，控制key的长度，当key较多时，内存占用也不容忽视
+-- 例如：user:{uid}:friends:messages:{mid}  简化为  u:{uid}:fr:m:{mid}。
+
+(3) 不要包含特殊字符
+- 不要包含空格、换行、单双引号以及其他转义字符
+
+
+#### 2. value设计
+(1) 【强制】拒绝bigkey
+-  string类型控制在10KB以内，hash、list、set、zset元素个数不要超过5000，元素数量过大可考虑拆分成多个key进行处理。虽然redis对单个key可以缓存的对象长度能够支持的很大，但是实际使用场合一定要合理拆分过大的缓存项，1k 基本是redis性能的一个拐点。当缓存项超过10k、100k、1m性能下降会特别明显。
+
+- 在局域网环境下只要传输的包不超过一个 MTU（以太网下默认是 1500 bytes），那么对于 10、100、1000 bytes不同包大小的处理吞吐能力实际结果差不多。
+
+-  非字符串的bigkey，不要使用del删除，使用hscan、sscan、zscan方式渐进式删除，同时要注意防止bigkey过期时间自动删除问题(例如一个200万的zset设置1小时过期，会触发del操作，造成阻塞)
+
+(2) 【推荐】选择适合的数据类型。
+例如：实体类型(要合理控制和使用数据结构内存编码优化配置,例如ziplist，但也要注意节省内存和性能之间的平衡)
+
+反例：
+```
+set user:1:name tom
+set user:1:age 19
+set user:1:favor football
+```
+正例:
+```
+hmset user:1 name tom age 19 favor football
+```
+#### 3.【推荐】：控制key的生命周期
+- 建议使用expire设置过期时间，如果key没有设置超时时间，会导致一直占用内存。
+- 对于可以预估使用生命周期的key应当设置合理的过期时间或在最后一次操作时进行清理，避免垃圾数据残留redis。
+- 条件允许的话，最好打散key过期时间，防止集中过期造成redis卡顿。
+
+
+#### 二、命令使用
+##### 1.【推荐】 O(N)命令关注N的数量
+- 例如hgetall、lrange、smembers、zrange、sinter等并非不能使用，但是需要明确N的值。有遍历的需求可以使用hscan、sscan、zscan代替。
+
+##### 2.【推荐】：禁用命令
+-  禁止线上使用keys（keys * 遍历数据会造成redis阻塞）
+-  禁止线上使用flushall、flushdb， 特殊情况下，这种需求需要提交DBA执行。
+-  禁止线上长时间开启monitor命令。(在开启的情况下会降低redis 50%吞吐量）
+
+##### 3.【推荐】合理使用select
+redis的多数据库较弱，使用数字进行区分，很多客户端支持较差，同时多业务用多数据库实际还是单线程处理，会有干扰。（redis cluster 目前只支持使用db0）
+
+##### 4.【推荐】使用批量操作提高效率
+原生命令：例如mget、mset
+非原生命令：可以使用pipeline提高效率。
+- 批量操作的时候，也需要注意控制一次批量操作的元素个数 (例如每次500以内) ，过大的单次请求操作，可能造成redis ops飙升，redis响应变慢。
+
+##### 5.【建议】Redis事务功能较弱，不建议过多使用 
+- Redis的事务功能较弱(不支持回滚，或者可以称为伪事务)，而且集群版本(自研和官方)要求一次事务操作的key必须在一个slot上(可以使用hashtag功能解决)
