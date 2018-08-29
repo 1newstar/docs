@@ -1,6 +1,9 @@
-参考文章： https://yq.aliyun.com/articles/531067
-http://tech.lede.com/2017/07/03/rd/server/redisconfig/ 
-https://blog.csdn.net/liuxiao723846/article/details/78089577  【redis中的死key问题】
+参考文章： 
+- https://yq.aliyun.com/articles/531067
+- http://tech.lede.com/2017/07/03/rd/server/redisconfig/ 
+- https://blog.csdn.net/liuxiao723846/article/details/78089577  【redis中的死key问题】
+
+
 
 
 #### 一、键值设计
@@ -11,7 +14,7 @@ https://blog.csdn.net/liuxiao723846/article/details/78089577  【redis中的死k
 
 (2)简洁性
 - 保证语义的前提下，控制key的长度，当key较多时，内存占用也不容忽视
--- 例如：user:{uid}:friends:messages:{mid}  简化为  u:{uid}:fr:m:{mid}。
+-- 例如：user:{uid}:friends:messages:{mid}  简化为  u:{uid}:fr:m:{mid}
 
 (3) 不要包含特殊字符
 - 不要包含空格、换行、单双引号以及其他转义字符
@@ -19,11 +22,11 @@ https://blog.csdn.net/liuxiao723846/article/details/78089577  【redis中的死k
 
 #### 2. value设计
 (1) 【强制】拒绝bigkey
--  string类型控制在10KB以内，hash、list、set、zset元素个数不要超过5000，元素数量过大可考虑拆分成多个key进行处理。虽然redis对单个key可以缓存的对象长度能够支持的很大，但是实际使用场合一定要合理拆分过大的缓存项，1k 基本是redis性能的一个拐点。当缓存项超过10k、100k、1m性能下降会特别明显。
-
-- 在局域网环境下只要传输的包不超过一个 MTU（以太网下默认是 1500 bytes），那么对于 10、100、1000 bytes不同包大小的处理吞吐能力实际结果差不多。
-
--  非字符串的bigkey，不要使用del删除，使用hscan、sscan、zscan方式渐进式删除，同时要注意防止bigkey过期时间自动删除问题(例如一个200万的zset设置1小时过期，会触发del操作，造成阻塞)
+-  string类型控制在10KB以内
+-  hash、list、set、zset元素个数不要超过5000，元素数量过大可考虑拆分成多个key进行处理
+-  单个key超过1k 基本是redis性能的一个拐点。当缓存项超过10k、100k、1m性能下降会特别明显
+- 在局域网环境下只要传输的包不超过一个 MTU（以太网下默认是 1500 bytes），那么对于 10、100、1000 bytes不同包大小的处理吞吐能力实际结果差不多
+-  非字符串的bigkey，不要使用del删除，使用hscan、sscan、zscan方式渐进式删除
 
 (2) 【推荐】选择适合的数据类型。
 例如：实体类型(要合理控制和使用数据结构内存编码优化配置,例如ziplist，但也要注意节省内存和性能之间的平衡)
