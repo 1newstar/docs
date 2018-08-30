@@ -1,8 +1,3 @@
-参考文章： 
-- https://yq.aliyun.com/articles/531067
-- http://tech.lede.com/2017/07/03/rd/server/redisconfig/ 
-- https://blog.csdn.net/liuxiao723846/article/details/78089577  【redis中的死key问题】
-
 
 #### 一、键值设计
 ##### 1. key名设计
