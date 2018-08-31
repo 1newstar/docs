@@ -25,11 +25,15 @@
 
 #### SQL使用规范
 - 正确使用写关注设置 [Write Concern]
- ```MongoDB建议对重要的数据使用 {w:"marjority"} 的选项。{w:"majority"} 可以保证数据在复制到多数节点后才返回成功结果。使用该机制可以有效防止数据回滚的发生。```
+ ```
+ MongoDB建议对重要的数据使用 {w:"marjority"} 的选项。{w:"majority"} 可以保证数据在复制到多数节点后才返回成功结果。使用该机制可以有效防止数据回滚的发生。
+ ```
 - 正确使用读选项设置 [Read Preference]
 - 对写操作使用[retry重试机制]
 - 创建索引必须以[background]方式创建，避免造成写锁
-```db.people.createIndex({zipcode: 1}, {background: true})```
+```
+db.people.createIndex({zipcode: 1}, {background: true})
+```
 - 创建索引、创建集合必须提工单由DBA创建
 - 避免使用短连接(短连接增加额外的conn、auth、close的开销)
 - 不确定是否走索引的SQL，可以使用explain查看其执行计划
