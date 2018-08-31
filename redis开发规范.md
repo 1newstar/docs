@@ -14,7 +14,7 @@
 
 
 ### 2. value设计
-####  2.1 **拒绝bigkey**
+####  2.1 **【强制】 拒绝bigkey**
 - **string类型控制在10KB以内**
 - hash、list、set、zset元素个数不要超过5000，元素数量过大可考虑拆分成多个key进行处理
 - **单个key超过1k 基本是redis性能的一个拐点。当缓存项超过10k、100k、1m性能下降会特别明显**
@@ -39,7 +39,7 @@ set user:1:favor football
 hmset user:1 name tom age 19 favor football
 ```
 
-### 3.控制key的生命周期
+### 3.【强制】 控制key的生命周期
 - **建议使用expire设置过期时间(TTL最大3个月) 如果key没有设置超时时间，会导致一直占用内存**
 - **对于可以预估使用生命周期的key应当设置合理的过期时间或在最后一次操作时进行清理，避免垃圾数据残留redis**
 - **条件允许的话，最好打散key过期时间，防止集中过期造成redis卡顿**
@@ -49,7 +49,7 @@ hmset user:1 name tom age 19 favor football
 ### 1. O(N)命令关注N的数量
 - 例如hgetall、lrange、smembers、zrange、sinter等并非不能使用，但是需要明确N的值。有遍历的需求可以使用hscan、sscan、zscan代替。
 
-### **2.禁用命令**
+### **2.【强制】 禁用命令**
 -  **禁止线上使用keys (keys * 遍历数据会造成redis阻塞)**
 -  **禁止线上使用flushall、flushdb， 特殊情况下，这种需求需要提交DBA执行**
 -  **禁止线上长时间开启monitor命令。在开启的情况下会降低redis 50% 吞吐量**
